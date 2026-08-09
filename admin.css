@@ -1,0 +1,229 @@
+/* Admin Panel Custom Styling */
+
+.players-list-container {
+    background: rgba(10, 10, 25, 0.4);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 0.5rem;
+    overflow-x: auto;
+    flex: 1;
+}
+
+.players-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+    text-align: left;
+}
+
+.players-table th, 
+.players-table td {
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.players-table th {
+    font-family: var(--font-display);
+    font-size: 0.8rem;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.players-table tbody tr {
+    transition: var(--transition-fast);
+}
+
+.players-table tbody tr:hover {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.no-players {
+    text-align: center;
+    color: var(--text-muted);
+    padding: 2rem !important;
+}
+
+/* Live Player Progress Bars */
+.player-progress-cell {
+    width: 180px;
+}
+
+.player-progress-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.player-progress-val {
+    font-weight: 700;
+    color: var(--primary-color);
+    min-width: 35px;
+    text-align: right;
+}
+
+.player-progress-bar {
+    flex: 1;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.player-progress-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    background: linear-gradient(90deg, var(--secondary-color), var(--primary-color));
+    box-shadow: 0 0 8px var(--primary-glow);
+}
+
+/* Status Indicator badges */
+.player-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-color);
+}
+
+.player-status-badge.online {
+    color: var(--success-color);
+    border-color: rgba(57, 255, 20, 0.2);
+    background: rgba(57, 255, 20, 0.05);
+}
+
+.player-status-badge.claiming {
+    color: var(--warning-color);
+    border-color: rgba(255, 183, 3, 0.3);
+    background: rgba(255, 183, 3, 0.1);
+    animation: textBlink 1s infinite alternate;
+}
+
+@keyframes textBlink {
+    from { opacity: 0.7; }
+    to { opacity: 1; text-shadow: 0 0 8px var(--warning-color); }
+}
+
+/* Target Pattern Selection */
+.select-patterns-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.75rem !important;
+}
+
+.select-patterns-grid .pattern-card {
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.select-patterns-grid .pattern-card:hover {
+    border-color: var(--primary-color);
+    transform: translateY(-2px);
+    box-shadow: 0 0 10px rgba(0, 242, 254, 0.15);
+}
+
+.select-patterns-grid .pattern-card.active {
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 0 15px var(--primary-glow) !important;
+}
+
+/* Claims Management Panel */
+.claims-area {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.claims-card {
+    background: radial-gradient(circle at 10% 20%, rgba(255, 183, 3, 0.15) 0%, rgba(13, 13, 35, 0.85) 100%);
+    border: 2px solid var(--warning-color);
+    box-shadow: 0 0 20px rgba(255, 183, 3, 0.3);
+    border-radius: 12px;
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    position: relative;
+    overflow: hidden;
+    animation: slideInClaim 0.3s ease-out;
+}
+
+@keyframes slideInClaim {
+    from { transform: translateY(-10px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.claims-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: var(--warning-color);
+}
+
+.claim-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.claim-title {
+    font-family: var(--font-display);
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--warning-color);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.claim-time {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.claim-details {
+    font-size: 0.85rem;
+    color: var(--text-main);
+}
+
+.claim-details strong {
+    color: var(--primary-color);
+}
+
+.claim-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+}
+
+.claim-actions .btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.8rem;
+    border-radius: 8px;
+    flex: 1;
+}
+
+.claim-actions .btn-success {
+    background: linear-gradient(135deg, var(--success-color), #2ec4b6);
+    color: var(--text-dark);
+}
+
+.claim-actions .btn-success:hover {
+    box-shadow: 0 0 12px var(--success-glow);
+}
+
+.claim-actions .btn-danger {
+    background: rgba(255, 51, 51, 0.1);
+    border-color: rgba(255, 51, 51, 0.3);
+    color: var(--danger-color);
+}

@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Bingo Blast - Ultimate Arcade Bingo Experience</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="bg-glow"></div>
+    <canvas id="confetti-canvas"></canvas>
+
+    <!-- Auth Screen Overlay -->
+    <div id="auth-screen" class="auth-overlay">
+        <div class="auth-card">
+            <div class="auth-logo">
+                <i class="fa-solid fa-dice-d20 auth-logo-icon"></i>
+                <h2>NEON BINGO <span class="accent-text">BLAST</span></h2>
+            </div>
+            
+            <div class="auth-tabs">
+                <button id="tab-login" class="auth-tab-btn active">LOGIN</button>
+                <button id="tab-register" class="auth-tab-btn">REGISTER</button>
+            </div>
+
+            <!-- Login Form -->
+            <form id="login-form" class="auth-form active">
+                <div class="form-group">
+                    <label for="login-identity"><i class="fa-solid fa-user"></i> Email or Phone Number</label>
+                    <div class="input-wrapper">
+                        <i class="fa-solid fa-envelope input-icon"></i>
+                        <input type="text" id="login-identity" placeholder="name@email.com or +1234567890" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="login-password"><i class="fa-solid fa-lock"></i> Password</label>
+                    <div class="input-wrapper">
+                        <i class="fa-solid fa-key input-icon"></i>
+                        <input type="password" id="login-password" placeholder="••••••••" required>
+                    </div>
+                </div>
+                <div class="auth-error" id="login-error"></div>
+                <button type="submit" class="btn btn-primary btn-glow btn-auth">
+                    <i class="fa-solid fa-right-to-bracket"></i> ENTER PORTAL
+                </button>
+            </form>
+
+            <!-- Register Form -->
+            <form id="register-form" class="auth-form">
+                <div class="form-group">
+                    <label for="reg-nickname"><i class="fa-solid fa-user-tag"></i> Nickname (In-game display name)</label>
+                    <div class="input-wrapper">
+                        <i class="fa-solid fa-face-smile input-icon"></i>
+                        <input type="text" id="reg-nickname" placeholder="CyberWarrior" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="reg-identity"><i class="fa-solid fa-envelope"></i> Email or Phone Number</label>
+                    <div class="input-wrapper">
+                        <i class="fa-solid fa-envelope input-icon"></i>
+                        <input type="text" id="reg-identity" placeholder="name@email.com or +1234567890" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="reg-password"><i class="fa-solid fa-lock"></i> Password</label>
+                    <div class="input-wrapper">
+                        <i class="fa-solid fa-key input-icon"></i>
+                        <input type="password" id="reg-password" placeholder="Min. 6 characters" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="reg-confirm-password"><i class="fa-solid fa-circle-check"></i> Confirm Password</label>
+                    <div class="input-wrapper">
+                        <i class="fa-solid fa-shield-halved input-icon"></i>
+                        <input type="password" id="reg-confirm-password" placeholder="••••••••" required>
+                    </div>
+                </div>
+                <div class="auth-error" id="reg-error"></div>
+                <button type="submit" class="btn btn-primary btn-glow btn-auth">
+                    <i class="fa-solid fa-user-plus"></i> CREATE ACCOUNT
+                </button>
+            </form>
+
+            <div class="auth-footer">
+                <p id="toggle-auth-msg">Don't have an account? <a href="#" id="toggle-auth-link">Register Now</a></p>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-container">
+        <!-- Header -->
+        <header>
+            <div class="logo">
+                <i class="fa-solid fa-dice-d20 logo-icon"></i>
+                <h1>NEON BINGO <span class="accent-text">BLAST</span></h1>
+            </div>
+            <div class="controls-header">
+                <div class="user-profile" id="user-profile-header">
+                    <i class="fa-solid fa-user-astronaut profile-icon"></i>
+                    <span id="welcome-username">Guest</span>
+                    <button id="logout-btn" class="header-btn logout-btn" title="Logout">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                    </button>
+                </div>
+                <button id="fb-settings-btn" class="header-btn" title="Firebase Connection">
+                    <i class="fa-solid fa-wifi"></i>
+                </button>
+                <button id="sound-btn" class="header-btn" title="Toggle Sound">
+                    <i class="fa-solid fa-volume-high"></i>
+                </button>
+                <button id="voice-btn" class="header-btn" title="Toggle Caller Voice">
+                    <i class="fa-solid fa-microphone-lines"></i>
+                </button>
+                <button id="rules-btn" class="header-btn" title="How to Play">
+                    <i class="fa-solid fa-circle-info"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Dashboard -->
+        <main class="dashboard">
+            <!-- Left Panel: The Bingo Caller (Host) -->
+            <section class="panel caller-panel">
+                <div class="panel-header">
+                    <h2><i class="fa-solid fa-satellite-dish"></i> BINGO CALLER</h2>
+                    <span class="status-badge" id="caller-status">READY</span>
+                </div>
+
+                <div class="caller-display-card">
+                    <div class="current-ball-container">
+                        <div class="ball-glow"></div>
+                        <div class="current-ball" id="current-ball">-</div>
+                    </div>
+                    <div class="ball-details">
+                        <span class="ball-label" id="ball-letter">READY TO BLAST</span>
+                        <span class="ball-subtext" id="ball-phrase">Press start to begin</span>
+                    </div>
+                </div>
+
+                <div id="caller-sync-msg" class="caller-sync-msg" style="margin-top: 1rem;">
+                    <i class="fa-solid fa-lock"></i> Synced with Host Admin
+                </div>
+
+                <!-- Call History -->
+                <div class="history-container">
+                    <h3>RECENTLY CALLED</h3>
+                    <div class="history-balls" id="history-balls">
+                        <div class="empty-history">No numbers called yet</div>
+                    </div>
+                </div>
+
+                <!-- Master Board Toggle & Minimap -->
+                <div class="master-board-section">
+                    <div class="master-board-header">
+                        <h3>ALL CALLED NUMBERS</h3>
+                        <span class="board-counter" id="drawn-counter">0 / 75</span>
+                    </div>
+                    <div class="master-board-grid" id="master-board">
+                        <!-- Filled by JS -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Center Panel: The Active Player Cards -->
+            <section class="panel player-panel">
+                <div class="panel-header">
+                    <h2><i class="fa-solid fa-id-card"></i> YOUR BINGO CARDS</h2>
+                    <div class="card-count-controls">
+                        <span class="label-text">Cards:</span>
+                        <div class="btn-group">
+                            <button class="card-qty-btn active" data-qty="1">1</button>
+                            <button class="card-qty-btn" data-qty="2">2</button>
+                            <button class="card-qty-btn" data-qty="4">4</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="player-cards-container" id="cards-wrapper">
+                    <!-- Dynamic cards will be generated here -->
+                </div>
+
+                <!-- Claim Bingo Action -->
+                <div class="bingo-claim-container">
+                    <button id="bingo-claim-btn" class="btn btn-bingo btn-glow">
+                        <i class="fa-solid fa-trophy"></i> CLAIM BINGO!
+                    </button>
+                </div>
+            </section>
+
+            <!-- Right Panel: AI Opponents & Leaderboard -->
+            <section class="panel leaderboard-panel">
+                <div class="panel-header">
+                    <h2><i class="fa-solid fa-users"></i> AI OPPONENTS</h2>
+                    <span class="live-pulse">LIVE</span>
+                </div>
+
+                <div class="opponents-list" id="opponents-list">
+                    <!-- Dynamic opponents will be added here -->
+                </div>
+
+                <div class="panel-header section-divider">
+                    <h2><i class="fa-solid fa-star"></i> TARGET PATTERNS</h2>
+                </div>
+
+                <div class="patterns-container">
+                    <p class="pattern-intro">Achieve any of the following to claim BINGO:</p>
+                    <div class="patterns-grid">
+                        <div class="pattern-card active" data-pattern="line">
+                            <div class="pattern-preview line-pattern"></div>
+                            <span class="pattern-name">1 Line</span>
+                        </div>
+                        <div class="pattern-card" data-pattern="double-line">
+                            <div class="pattern-preview double-line-pattern"></div>
+                            <span class="pattern-name">2 Lines</span>
+                        </div>
+                        <div class="pattern-card" data-pattern="four-corners">
+                            <div class="pattern-preview corners-pattern"></div>
+                            <span class="pattern-name">4 Corners</span>
+                        </div>
+                        <div class="pattern-card" data-pattern="full-house">
+                            <div class="pattern-preview full-house-pattern"></div>
+                            <span class="pattern-name">Full House</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stats-card">
+                    <h3>GAME STATISTICS</h3>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <span class="stat-label">Time Elapsed</span>
+                            <span class="stat-value" id="stat-time">00:00</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Calls Made</span>
+                            <span class="stat-value" id="stat-calls">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Daub Accuracy</span>
+                            <span class="stat-value" id="stat-accuracy">100%</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Game Status</span>
+                            <span class="stat-value text-accent" id="stat-state">Lobby</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Rules Modal -->
+    <div id="rules-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fa-solid fa-gamepad"></i> Game Rules & How to Play</h2>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <h3>Goal of the Game</h3>
+                <p>Complete a winning pattern on your Bingo card before the AI players complete theirs!</p>
+                
+                <h3>How to Play</h3>
+                <ol>
+                    <li>Select the number of cards you want to play with (1, 2, or 4).</li>
+                    <li>Click <strong>CALL NEXT</strong> to manually draw numbers, or toggle <strong>AUTO-PLAY</strong> to have the host draw them automatically at your preferred speed.</li>
+                    <li>Look at your cards. If the called number is on your card, click it to <strong>daub</strong> (mark) it.</li>
+                    <li>When you complete a target pattern (Line, Double Line, 4 Corners, or Full House), smash the <strong>CLAIM BINGO!</strong> button to verify and win!</li>
+                </ol>
+
+                <h3>Target Patterns</h3>
+                <ul>
+                    <li><strong>1 Line:</strong> Any full horizontal, vertical, or diagonal line.</li>
+                    <li><strong>2 Lines:</strong> Any two completed lines on the same card.</li>
+                    <li><strong>4 Corners:</strong> Mark the four corner cells of the card.</li>
+                    <li><strong>Full House:</strong> Mark every single number on your card!</li>
+                </ul>
+
+                <h3>Special Features</h3>
+                <ul>
+                    <li>🔊 <strong>Synth Sound FX:</strong> Custom chimes generated using Web Audio API synthesis.</li>
+                    <li>🎙️ <strong>Voice Caller:</strong> Synthesized Text-to-Speech voices read out the calls (e.g. "B-12").</li>
+                    <li>🤖 <strong>Live AI Competitors:</strong> Watch the AI players make progress on their own hidden cards in real-time. Don't let them beat you!</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Win/Loss Overlay Modal -->
+    <div id="game-over-modal" class="modal">
+        <div class="modal-content game-over-content">
+            <div class="modal-body text-center">
+                <div class="trophy-wrapper">
+                    <i class="fa-solid fa-trophy winner-icon" id="game-over-icon"></i>
+                </div>
+                <h1 id="game-over-title">YOU WON!</h1>
+                <p id="game-over-message">Congratulations! You got a Bingo and beat the opponents.</p>
+                
+                <div class="game-over-stats">
+                    <div class="go-stat">
+                        <span class="go-label">Total Balls Called</span>
+                        <span class="go-value" id="go-balls">0</span>
+                    </div>
+                    <div class="go-stat">
+                        <span class="go-label">Accuracy</span>
+                        <span class="go-value" id="go-accuracy">0%</span>
+                    </div>
+                </div>
+
+                <button id="play-again-btn" class="btn btn-primary btn-glow btn-large">
+                    <i class="fa-solid fa-rotate-left"></i> PLAY AGAIN
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase Settings Modal -->
+    <div id="fb-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fa-solid fa-wifi"></i> Firebase Settings</h2>
+                <button class="close-modal" id="close-fb-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom: 1rem; font-size: 0.9rem; color: var(--text-muted);">Connect to Firebase to link player actions and live calling with the Admin Portal.</p>
+                <form id="fb-config-form">
+                    <div class="form-group">
+                        <label for="fb-apiKey">API Key</label>
+                        <div class="input-wrapper">
+                            <i class="fa-solid fa-key input-icon"></i>
+                            <input type="text" id="fb-apiKey" placeholder="AIzaSy..." required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="fb-authDomain">Auth Domain</label>
+                        <div class="input-wrapper">
+                            <i class="fa-solid fa-globe input-icon"></i>
+                            <input type="text" id="fb-authDomain" placeholder="your-project.firebaseapp.com" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="fb-databaseURL">Database URL</label>
+                        <div class="input-wrapper">
+                            <i class="fa-solid fa-database input-icon"></i>
+                            <input type="text" id="fb-databaseURL" placeholder="https://your-project.firebaseio.com" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="fb-projectId">Project ID</label>
+                        <div class="input-wrapper">
+                            <i class="fa-solid fa-diagram-project input-icon"></i>
+                            <input type="text" id="fb-projectId" placeholder="your-project" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="fb-storageBucket">Storage Bucket</label>
+                        <div class="input-wrapper">
+                            <i class="fa-solid fa-bucket input-icon"></i>
+                            <input type="text" id="fb-storageBucket" placeholder="your-project.appspot.com" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="fb-messagingSenderId">Sender ID</label>
+                        <div class="input-wrapper">
+                            <i class="fa-solid fa-paper-plane input-icon"></i>
+                            <input type="text" id="fb-messagingSenderId" placeholder="1234567890" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="fb-appId">App ID</label>
+                        <div class="input-wrapper">
+                            <i class="fa-solid fa-mobile-screen input-icon"></i>
+                            <input type="text" id="fb-appId" placeholder="1:12345:web:abcd..." required>
+                        </div>
+                    </div>
+                    <div class="fb-status-indicator" id="fb-connection-status" style="margin: 1rem 0; font-weight: bold; text-align: center;">
+                        Status: <span id="fb-status-text" style="color: var(--danger-color);">Offline (Local Demo)</span>
+                    </div>
+                    <div class="auth-error" id="fb-config-error" style="color: var(--danger-color); margin-bottom: 1rem;"></div>
+                    <div style="display: flex; gap: 0.75rem; width: 100%;">
+                        <button type="submit" class="btn btn-primary btn-glow" style="flex: 1;">SAVE</button>
+                        <button type="button" id="fb-clear-btn" class="btn btn-danger" style="flex: 1;">DISCONNECT</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+   <!-- 1. Firebase Core -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+
+<!-- 2. Firebase Services -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+<!-- 3. YOUR Application Logic (Must come AFTER Firebase SDKs) -->
+<script src="firebase-service.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

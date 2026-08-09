@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Bingo Blast - Host Admin Portal</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Shared Stylesheet -->
+    <link rel="stylesheet" href="styles.css">
+    <!-- Custom Admin Panel Stylesheet -->
+    <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+    <div class="bg-glow"></div>
+
+    <div class="app-container">
+        <!-- Header -->
+        <header>
+            <div class="logo">
+                <i class="fa-solid fa-screwdriver-wrench logo-icon" style="animation: none;"></i>
+                <h1>NEON BINGO <span class="accent-text">ADMIN</span></h1>
+            </div>
+            <div class="controls-header">
+                <div class="user-profile" id="user-profile-header" style="display: flex;">
+                    <i class="fa-solid fa-user-shield profile-icon"></i>
+                    <span>Host / Caller</span>
+                </div>
+                <button id="fb-settings-btn" class="header-btn disconnected" title="Firebase Connection">
+                    <i class="fa-solid fa-wifi"></i>
+                </button>
+                <button id="sound-btn" class="header-btn" title="Toggle Sound">
+                    <i class="fa-solid fa-volume-high"></i>
+                </button>
+                <button id="voice-btn" class="header-btn" title="Toggle Caller Voice">
+                    <i class="fa-solid fa-microphone-lines"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Dashboard -->
+        <main class="dashboard">
+            <!-- Left Panel: Game State & Settings -->
+            <section class="panel caller-panel">
+                <div class="panel-header">
+                    <h2><i class="fa-solid fa-gamepad"></i> HOST CONTROLS</h2>
+                    <span class="status-badge" id="caller-status">LOBBY</span>
+                </div>
+
+                <div class="settings-group">
+                    <h3>SELECT TARGET PATTERN</h3>
+                    <div class="patterns-grid select-patterns-grid">
+                        <div class="pattern-card active" data-pattern="line">
+                            <div class="pattern-preview line-pattern"></div>
+                            <span class="pattern-name">1 Line</span>
+                        </div>
+                        <div class="pattern-card" data-pattern="double-line">
+                            <div class="pattern-preview double-line-pattern"></div>
+                            <span class="pattern-name">2 Lines</span>
+                        </div>
+                        <div class="pattern-card" data-pattern="four-corners">
+                            <div class="pattern-preview corners-pattern"></div>
+                            <span class="pattern-name">4 Corners</span>
+                        </div>
+                        <div class="pattern-card" data-pattern="full-house">
+                            <div class="pattern-preview full-house-pattern"></div>
+                            <span class="pattern-name">Full House</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Call Controls -->
+                <div class="settings-group">
+                    <h3>GAME FLOW</h3>
+                    <div class="caller-controls">
+                        <button id="start-game-btn" class="btn btn-primary btn-glow">
+                            <i class="fa-solid fa-play"></i> START GAME
+                        </button>
+                        <button id="draw-btn" class="btn btn-secondary" disabled>
+                            <i class="fa-solid fa-forward"></i> CALL NEXT
+                        </button>
+                        <button id="auto-btn" class="btn btn-secondary" disabled>
+                            <i class="fa-solid fa-play"></i> AUTO-PLAY
+                        </button>
+                        <button id="reset-btn" class="btn btn-danger">
+                            <i class="fa-solid fa-rotate-left"></i> RESET LOBBY
+                        </button>
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <div class="setting-item">
+                        <label for="speed-range"><i class="fa-solid fa-gauge-high"></i> Speed: <span id="speed-val">4s</span></label>
+                        <input type="range" id="speed-range" min="2" max="8" value="4" step="1">
+                    </div>
+                </div>
+
+                <div class="stats-card">
+                    <h3>SESSION STATISTICS</h3>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <span class="stat-label">Calls Made</span>
+                            <span class="stat-value" id="stat-calls">0 / 75</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Game Status</span>
+                            <span class="stat-value text-accent" id="stat-state">Lobby</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Center Panel: Enrolled Players & Claims -->
+            <section class="panel player-panel">
+                <div class="panel-header">
+                    <h2><i class="fa-solid fa-users"></i> ENROLLED PLAYERS</h2>
+                    <span class="status-badge active" id="player-count">0 ACTIVE</span>
+                </div>
+
+                <!-- Active Claims Container (Floats above list if any claims) -->
+                <div id="claims-container" class="claims-area">
+                    <!-- Dynamic Claims will appear here -->
+                </div>
+
+                <div class="players-list-container">
+                    <table class="players-table">
+                        <thead>
+                            <tr>
+                                <th>PLAYER</th>
+                                <th>CARDS</th>
+                                <th>PROGRESS</th>
+                                <th>STATUS</th>
+                            </tr>
+                        </thead>
+                        <tbody id="players-list-body">
+                            <tr>
+                                <td colspan="4" class="no-players">No players currently enrolled. Configure Firebase to sync.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Right Panel: Called Ball Display & Master Board -->
+            <section class="panel leaderboard-panel">
+                <div class="panel-header">
+                    <h2><i class="fa-solid fa-satellite-dish"></i> LIVE BALL BOARD</h2>
+                </div>
+
+                <div class="caller-display-card">
+                    <div class="current-ball-container">
+                        <div class="ball-glow"></div>
+                        <div class="current-ball" id="current-ball">-</div>
+                    </div>
+                    <div class="ball-details">
+                        <span class="ball-label" id="ball-letter">STANDBY</span>
+                        <span class="ball-subtext" id="ball-phrase">Awaiting game start</span>
+                    </div>
+                </div>
+
+                <!-- Call History -->
+                <div class="history-container">
+                    <h3>RECENTLY CALLED</h3>
+                    <div class="history-balls" id="history-balls">
+                        <div class="empty-history">No numbers called yet</div>
+                    </div>
+                </div>
+
+                <!-- Master Board Grid -->
+                <div class="master-board-section">
+                    <div class="master-board-header">
+                        <h3>MASTER BOARD</h3>
+                    </div>
+                    <div class="master-board-grid" id="master-board">
+                        <!-- Filled by JS -->
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Firebase Config Modal -->
+    <div id="fb-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fa-solid fa-wifi"></i> Firebase Settings</h2>
+                <button class="close-modal" id="close-fb-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom: 1rem; font-size: 0.9rem; color: var(--text-muted);">Connect to Firebase to link player actions and live calling with the Admin Portal.</p>
+                <form id="fb-config-form">
+                    <div class="form-group">
+                        <label for="fb-apiKey">API Key</label>
+                        <div class="input-wrapper">
+                            <i class="fa-solid fa-key input-icon"></i>
+                            <input type="text" id="fb-apiKey" placeholder="AIzaSy..." required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="fb-authDomain">Auth Domain</label>
+                        <div class="input-wrapper">
+                            <i class="fa-solid fa-globe input-icon"></i>
+                            <input type="text" id="fb-authDomain" placeholder="your-project.firebaseapp.com" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="fb-databaseURL">Database URL</label>
+                        <div class="input-wrapper">
+                            <i class="fa-solid fa-database input-icon"></i>
+                            <input type="text" id="fb-databaseURL" placeholder="https://your-project.firebaseio.com" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="fb-projectId">Project ID</label>
+                        <div class="input-wrapper">
+                            <i class="fa-solid fa-diagram-project input-icon"></i>
+                            <input type="text" id="fb-projectId" placeholder="your-project" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="fb-storageBucket">Storage Bucket</label>
+                        <div class="input-wrapper">
+                            <i class="fa-solid fa-bucket input-icon"></i>
+                            <input type="text" id="fb-storageBucket" placeholder="your-project.appspot.com" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="fb-messagingSenderId">Sender ID</label>
+                        <div class="input-wrapper">
+                            <i class="fa-solid fa-paper-plane input-icon"></i>
+                            <input type="text" id="fb-messagingSenderId" placeholder="1234567890" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="fb-appId">App ID</label>
+                        <div class="input-wrapper">
+                            <i class="fa-solid fa-mobile-screen input-icon"></i>
+                            <input type="text" id="fb-appId" placeholder="1:12345:web:abcd..." required>
+                        </div>
+                    </div>
+                    <div class="fb-status-indicator" id="fb-connection-status" style="margin: 1rem 0; font-weight: bold; text-align: center;">
+                        Status: <span id="fb-status-text" style="color: var(--danger-color);">Offline (Unconnected)</span>
+                    </div>
+                    <div class="auth-error" id="fb-config-error" style="color: var(--danger-color); margin-bottom: 1rem;"></div>
+                    <div style="display: flex; gap: 0.75rem; width: 100%;">
+                        <button type="submit" class="btn btn-primary btn-glow" style="flex: 1;">SAVE</button>
+                        <button type="button" id="fb-clear-btn" class="btn btn-danger" style="flex: 1;">DISCONNECT</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    <script src="firebase-service.js"></script>
+
+    <!-- Admin Game Logic -->
+    <script src="admin.js"></script>
+</body>
+</html>
