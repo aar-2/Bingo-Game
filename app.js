@@ -927,7 +927,49 @@ function setupAuthentication() {
     const toggleAuthLink = document.getElementById('toggle-auth-link');
     const toggleAuthMessage = document.getElementById('toggle-auth-msg');
     const logoutButton = document.getElementById('logout-btn');
+    // --- FIRESTORE REALTIME LISTENER ---
+    const db = getFirestore();
+    onSnapshot(doc(db, "game", "current"), (snapshot) => {
+        if (!snapshot.exists()) return;
+        
+        const data = snapshot.data();
+        console.log("Live Client Data Received:", data);
 
+        // Extract called number or fallback
+        const lastNumber = data.lastDrawnNumber;
+        if (!lastNumber || drawnNumbers.has(lastNumber)) return;
+
+        // Sync local state with remote draw
+        drawnNumbers.add(lastNumber);
+        totalCalls++;
+
+        const letter = getNumberLetter(lastNumber);
+
+        // Update UI elements
+        const currentBallEl = document.getElementById('current-ball');
+        if (currentBallEl) {
+            currentBallEl.textContent = data.currentBall || `${letter}-${lastNumber}`;
+            currentBallEl.classList.remove('pulse-ball');
+            void currentBallEl.offsetWidth;
+            currentBallEl.classList.add('pulse-ball');
+        }
+
+        const ballLetterEl = document.getElementById('ball-letter');
+        if (ballLetterEl) ballLetterEl.textContent = `${letter} ${lastNumber}`;
+
+        const ballPhraseEl = document.getElementById('ball-phrase');
+        if (ballPhraseEl) ballPhraseEl.textContent = getBingoCallerPhrase(letter, lastNumber);
+
+        playSynthSound('draw');
+        speakNumber(letter, lastNumber);
+
+        const mbCell = document.querySelector(`.mb-cell[data-num="${lastNumber}"]`);
+        if (mbCell) mbCell.classList.add('called');
+
+        updateHistoryUI(letter, lastNumber);
+        updateStats();
+        processAICalls(lastNumber);
+    });
     if (!authScreen || !loginTab || !registerTab || !loginForm || !registerForm) {
         return;
     }
