@@ -3,6 +3,9 @@
 // ==========================================
 
 // --- State Variables ---
+
+//import { initializeApp } from "firebase/app";
+//import { getFirestore, doc, onSnapshot } from "firebase/firestore";
 let gameStarted = false;
 let gameEnded = false;
 let drawnNumbers = new Set();
@@ -917,6 +920,22 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initial game boot
     initGame(1);
 });
+import { initializeApp } from "firebase/app";
+import { getFirestore, doc, onSnapshot } from "firebase/firestore";
+
+const firebaseConfig = {
+                          apiKey: "AIzaSyARaTTQ75MRaUaXLVF9WIOchkTaupvIoSw",
+                          authDomain: "bingo-game-4751b.firebaseapp.com",
+                          databaseURL: "https://bingo-game-4751b-default-rtdb.firebaseio.com",
+                          projectId: "bingo-game-4751b",
+                          storageBucket: "bingo-game-4751b.firebasestorage.app",
+                          messagingSenderId: "512330967286",
+                          appId: "1:512330967286:web:774cfbe1a0743b7c0224d7",
+                          measurementId: "G-8YHXWVX2V2"
+                    };
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app); // Available globally across the entire file
 
 function setupAuthentication() {
     const authScreen = document.getElementById('auth-screen');
