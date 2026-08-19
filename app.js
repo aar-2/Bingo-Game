@@ -3,9 +3,8 @@
 // ==========================================
 
 // --- State Variables ---
-
-//import { initializeApp } from "firebase/app";
-//import { getFirestore, doc, onSnapshot } from "firebase/firestore";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 let gameStarted = false;
 let gameEnded = false;
 let drawnNumbers = new Set();
@@ -920,8 +919,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initial game boot
     initGame(1);
 });
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
 const firebaseConfig = {
                           apiKey: "AIzaSyARaTTQ75MRaUaXLVF9WIOchkTaupvIoSw",
                           authDomain: "bingo-game-4751b.firebaseapp.com",
