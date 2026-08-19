@@ -945,47 +945,65 @@ function setupAuthentication() {
     const logoutButton = document.getElementById('logout-btn');
     // --- FIRESTORE REALTIME LISTENER ---
     const db = getFirestore();
-    onSnapshot(doc(db, "game", "current"), (snapshot) => {
-        if (!snapshot.exists()) return;
-        
-        const data = snapshot.data();
-        console.log("Live Client Data Received:", data);
+onSnapshot(doc(db, "game", "current"), (snapshot) => {
+    if (!snapshot.exists()) return;
 
-        // Extract called number or fallback
-        const lastNumber = data.lastDrawnNumber;
-        if (!lastNumber || drawnNumbers.has(lastNumber)) return;
+    const data = snapshot.data();
+    console.log("Live Client Data Received:", data);
 
-        // Sync local state with remote draw
-        drawnNumbers.add(lastNumber);
-        totalCalls++;
+    // 1. Robust key extraction (handles both naming conventions)
+    const lastNumber = data.lastDrawnNumber ?? data.currentBall ?? data.lastNumber;
 
-        const letter = getNumberLetter(lastNumber);
+    // 2. Sync full history array from server if available
+    if (Array.isArray(data.calledNumbers) || Array.isArray(data.drawnNumbers)) {
+        const historyList = data.calledNumbers || data.drawnNumbers;
+        historyList.forEach(num => {
+            drawnNumbers.add(num);
+            const cell = document.querySelector(`.mb-cell[data-num="${num}"]`);
+            if (cell) cell.classList.add('called');
+        });
+    }
 
-        // Update UI elements
-        const currentBallEl = document.getElementById('current-ball');
-        if (currentBallEl) {
-            currentBallEl.textContent = data.currentBall || `${letter}-${lastNumber}`;
-            currentBallEl.classList.remove('pulse-ball');
-            void currentBallEl.offsetWidth;
-            currentBallEl.classList.add('pulse-ball');
-        }
-
-        const ballLetterEl = document.getElementById('ball-letter');
-        if (ballLetterEl) ballLetterEl.textContent = `${letter} ${lastNumber}`;
-
-        const ballPhraseEl = document.getElementById('ball-phrase');
-        if (ballPhraseEl) ballPhraseEl.textContent = getBingoCallerPhrase(letter, lastNumber);
-
-        playSynthSound('draw');
-        speakNumber(letter, lastNumber);
-
-        const mbCell = document.querySelector(`.mb-cell[data-num="${lastNumber}"]`);
-        if (mbCell) mbCell.classList.add('called');
-
-        updateHistoryUI(letter, lastNumber);
+    // 3. Guard against missing or duplicate calls
+    if (!lastNumber || drawnNumbers.has(lastNumber)) {
         updateStats();
-        processAICalls(lastNumber);
-    });
+        return;
+    }
+
+    // Process new drawn number
+    drawnNumbers.add(lastNumber);
+    totalCalls = drawnNumbers.size;
+
+    const letter = getNumberLetter(lastNumber);
+
+    // Update UI elements
+    const currentBallEl = document.getElementById('current-ball');
+    if (currentBallEl) {
+        currentBallEl.textContent = `${letter}-${lastNumber}`;
+        currentBallEl.classList.remove('pulse-ball');
+        void currentBallEl.offsetWidth; // Trigger reflow for animation
+        currentBallEl.classList.add('pulse-ball');
+    }
+
+    const ballLetterEl = document.getElementById('ball-letter');
+    if (ballLetterEl) ballLetterEl.textContent = `${letter} ${lastNumber}`;
+
+    const ballPhraseEl = document.getElementById('ball-phrase');
+    if (ballPhraseEl && typeof getBingoCallerPhrase === 'function') {
+        ballPhraseEl.textContent = getBingoCallerPhrase(letter, lastNumber);
+    }
+
+    // Audio & Master Board Updates
+    if (typeof playSynthSound === 'function') playSynthSound('draw');
+    if (typeof speakNumber === 'function') speakNumber(letter, lastNumber);
+
+    const mbCell = document.querySelector(`.mb-cell[data-num="${lastNumber}"]`);
+    if (mbCell) mbCell.classList.add('called');
+
+    if (typeof updateHistoryUI === 'function') updateHistoryUI(letter, lastNumber);
+    if (typeof updateStats === 'function') updateStats();
+    if (typeof processAICalls === 'function') processAICalls(lastNumber);
+});
     if (!authScreen || !loginTab || !registerTab || !loginForm || !registerForm) {
         return;
     }
