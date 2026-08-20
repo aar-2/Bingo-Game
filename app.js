@@ -3,8 +3,6 @@
 // ==========================================
 
 // --- State Variables ---
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 let gameStarted = false;
 let gameEnded = false;
 let drawnNumbers = new Set();
@@ -135,7 +133,7 @@ function playSynthSound(type) {
 function speakNumber(letter, number) {
     if (!isVoiceEnabled || !('speechSynthesis' in window)) return;
     
-    window.speechSynthesis.cancel(); // Cancel queue so speech doesn't lag
+    window.speechSynthesis.cancel();
     const text = `${letter}, ${number}`;
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.volume = isMuted ? 0 : 0.8;
@@ -663,6 +661,52 @@ function initGame(cardQty = 1) {
             progress: 0,
             claimed: false
         });
+        
+        // Listen to Realtime Database Game State Updates
+        window.fbService.listenGameState((state) => {
+            if (!state) return;
+            
+            if (state.targetPattern) {
+                currentTargetPattern = state.targetPattern;
+            }
+
+            if (state.currentBall && state.currentBall !== '-') {
+                const parts = state.currentBall.split('-');
+                if (parts.length === 2) {
+                    const letter = parts[0];
+                    const ballNum = parseInt(parts[1], 10);
+
+                    if (!drawnNumbers.has(ballNum)) {
+                        drawnNumbers.add(ballNum);
+                        totalCalls++;
+
+                        if (cb) {
+                            cb.textContent = state.currentBall;
+                            cb.classList.remove('pulse-ball');
+                            void cb.offsetWidth;
+                            cb.classList.add('pulse-ball');
+                        }
+                        if (bl) bl.textContent = state.currentBall;
+                        if (bp) bp.textContent = getBingoCallerPhrase(letter, ballNum);
+
+                        playSynthSound('draw');
+                        speakNumber(letter, ballNum);
+
+                        const mbCell = document.querySelector(`.mb-cell[data-num="${ballNum}"]`);
+                        if (mbCell) mbCell.classList.add('called');
+
+                        updateHistoryUI(letter, ballNum);
+                        updateStats();
+                        processAICalls(ballNum);
+                    }
+                }
+            }
+
+            if (state.status === 'ended' && state.winner) {
+                const isPlayerWinner = currentUser && (state.winner === currentUser.nickname || state.winner === currentUser.identity);
+                endGame(isPlayerWinner, state.winner, 0);
+            }
+        });
     }
 }
 
@@ -759,7 +803,7 @@ function endGame(playerWon, winnerName = null, cardIndex = null) {
             goTitle.style.color = "var(--success-color)";
             goTitle.style.textShadow = "0 0 15px var(--success-glow)";
         }
-        if (goMsg) goMsg.textContent = `Excellent! You completed the pattern on Ticket #${playerCards[cardIndex]?.id || ''} before the AI.`;
+        if (goMsg) goMsg.textContent = `Excellent! You completed the pattern on Ticket #${playerCards[cardIndex || 0]?.id || ''} before the AI.`;
         if (goIcon) {
             goIcon.className = "fa-solid fa-trophy winner-icon";
             goIcon.style.color = "var(--warning-color)";
@@ -773,7 +817,7 @@ function endGame(playerWon, winnerName = null, cardIndex = null) {
             goTitle.style.color = "var(--danger-color)";
             goTitle.style.textShadow = "0 0 15px rgba(255, 51, 51, 0.5)";
         }
-        if (goMsg) goMsg.textContent = `Aww, ${winnerName} claimed BINGO first! Try again.`;
+        if (goMsg) goMsg.textContent = `Aww, ${winnerName || 'another player'} claimed BINGO first! Try again.`;
         if (goIcon) {
             goIcon.className = "fa-solid fa-face-frown winner-icon";
             goIcon.style.color = "var(--danger-color)";
@@ -885,6 +929,46 @@ function drawPatternPreviews() {
     });
 }
 
+// --- Authentication Handler ---
+function setupAuthentication() {
+    const authScreen = document.getElementById('auth-screen');
+    const authForm = document.getElementById('auth-form');
+    
+    if (!authForm) return;
+
+    authForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const identityInput = document.getElementById('auth-identity');
+        const nicknameInput = document.getElementById('auth-nickname');
+        const passwordInput = document.getElementById('auth-password');
+
+        if (!identityInput || !passwordInput) return;
+
+        const identity = identityInput.value.trim();
+        const nickname = nicknameInput ? nicknameInput.value.trim() : identity;
+        const password = passwordInput.value;
+
+        try {
+            let user;
+            if (window.fbService?.connected) {
+                try {
+                    user = await window.fbService.loginUser(identity, password);
+                } catch (err) {
+                    user = await window.fbService.registerUser(nickname, identity, password);
+                }
+            } else {
+                user = { identity, nickname };
+            }
+
+            currentUser = user;
+            if (authScreen) authScreen.style.display = 'none';
+            initGame(1);
+        } catch (err) {
+            alert(`Authentication failed: ${err.message}`);
+        }
+    });
+}
+
 // --- Global Initialization ---
 document.addEventListener('DOMContentLoaded', () => {
     setupAuthentication();
@@ -919,204 +1003,3 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initial game boot
     initGame(1);
 });
-
-const firebaseConfig = {
-                          apiKey: "AIzaSyARaTTQ75MRaUaXLVF9WIOchkTaupvIoSw",
-                          authDomain: "bingo-game-4751b.firebaseapp.com",
-                          databaseURL: "https://bingo-game-4751b-default-rtdb.firebaseio.com",
-                          projectId: "bingo-game-4751b",
-                          storageBucket: "bingo-game-4751b.firebasestorage.app",
-                          messagingSenderId: "512330967286",
-                          appId: "1:512330967286:web:774cfbe1a0743b7c0224d7",
-                          measurementId: "G-8YHXWVX2V2"
-                    };
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app); // Available globally across the entire file
-
-function setupAuthentication() {
-    const authScreen = document.getElementById('auth-screen');
-    const loginTab = document.getElementById('tab-login');
-    const registerTab = document.getElementById('tab-register');
-    const loginForm = document.getElementById('login-form');
-    const registerForm = document.getElementById('register-form');
-    const toggleAuthLink = document.getElementById('toggle-auth-link');
-    const toggleAuthMessage = document.getElementById('toggle-auth-msg');
-    const logoutButton = document.getElementById('logout-btn');
-    // --- FIRESTORE REALTIME LISTENER ---
-    const db = getFirestore();
-onSnapshot(doc(db, "game", "current"), (snapshot) => {
-    if (!snapshot.exists()) return;
-
-    const data = snapshot.data();
-    console.log("Live Client Data Received:", data);
-
-    // 1. Robust key extraction (handles both naming conventions)
-    const lastNumber = data.lastDrawnNumber ?? data.currentBall ?? data.lastNumber;
-
-    // 2. Sync full history array from server if available
-    if (Array.isArray(data.calledNumbers) || Array.isArray(data.drawnNumbers)) {
-        const historyList = data.calledNumbers || data.drawnNumbers;
-        historyList.forEach(num => {
-            drawnNumbers.add(num);
-            const cell = document.querySelector(`.mb-cell[data-num="${num}"]`);
-            if (cell) cell.classList.add('called');
-        });
-    }
-
-    // 3. Guard against missing or duplicate calls
-    if (!lastNumber || drawnNumbers.has(lastNumber)) {
-        updateStats();
-        return;
-    }
-
-    // Process new drawn number
-    drawnNumbers.add(lastNumber);
-    totalCalls = drawnNumbers.size;
-
-    const letter = getNumberLetter(lastNumber);
-
-    // Update UI elements
-    const currentBallEl = document.getElementById('current-ball');
-    if (currentBallEl) {
-        currentBallEl.textContent = `${letter}-${lastNumber}`;
-        currentBallEl.classList.remove('pulse-ball');
-        void currentBallEl.offsetWidth; // Trigger reflow for animation
-        currentBallEl.classList.add('pulse-ball');
-    }
-
-    const ballLetterEl = document.getElementById('ball-letter');
-    if (ballLetterEl) ballLetterEl.textContent = `${letter} ${lastNumber}`;
-
-    const ballPhraseEl = document.getElementById('ball-phrase');
-    if (ballPhraseEl && typeof getBingoCallerPhrase === 'function') {
-        ballPhraseEl.textContent = getBingoCallerPhrase(letter, lastNumber);
-    }
-
-    // Audio & Master Board Updates
-    if (typeof playSynthSound === 'function') playSynthSound('draw');
-    if (typeof speakNumber === 'function') speakNumber(letter, lastNumber);
-
-    const mbCell = document.querySelector(`.mb-cell[data-num="${lastNumber}"]`);
-    if (mbCell) mbCell.classList.add('called');
-
-    if (typeof updateHistoryUI === 'function') updateHistoryUI(letter, lastNumber);
-    if (typeof updateStats === 'function') updateStats();
-    if (typeof processAICalls === 'function') processAICalls(lastNumber);
-});
-    if (!authScreen || !loginTab || !registerTab || !loginForm || !registerForm) {
-        return;
-    }
-
-    const showForm = (formName) => {
-        const isRegister = formName === 'register';
-        loginTab.classList.toggle('active', !isRegister);
-        registerTab.classList.toggle('active', isRegister);
-        loginForm.classList.toggle('active', !isRegister);
-        registerForm.classList.toggle('active', isRegister);
-        toggleAuthMessage.innerHTML = isRegister
-            ? 'Already have an account? <a href="#" id="toggle-auth-link">Login</a>'
-            : 'Don\'t have an account? <a href="#" id="toggle-auth-link">Register Now</a>';
-        document.getElementById('toggle-auth-link').addEventListener('click', (event) => {
-            event.preventDefault();
-            showForm(isRegister ? 'login' : 'register');
-        });
-    };
-
-    const showAuthenticatedState = (user) => {
-        currentUser = { identity: user.identity, nickname: user.nickname };
-        const username = document.getElementById('welcome-username');
-        if (username) username.textContent = currentUser.nickname;
-        authScreen.classList.add('hide');
-        window.localStorage.setItem('neon_bingo_session', JSON.stringify(currentUser));
-        if (window.fbService?.connected) {
-            window.fbService.updatePlayerStatus(currentUser.identity, currentUser.nickname, {
-                cardCount: 1,
-                progress: 0,
-                claimed: false,
-                active: true
-            });
-        }
-    };
-
-    const showError = (elementId, error) => {
-        const errorElement = document.getElementById(elementId);
-        if (errorElement) errorElement.textContent = error.message || 'Something went wrong. Please try again.';
-    };
-
-    loginTab.addEventListener('click', () => showForm('login'));
-    registerTab.addEventListener('click', () => showForm('register'));
-
-    loginForm.addEventListener('submit', async (event) => {
-        event.preventDefault();
-        const identity = document.getElementById('login-identity').value.trim();
-        const password = document.getElementById('login-password').value;
-        document.getElementById('login-error').textContent = '';
-
-        try {
-            const user = await window.fbService.loginUser(identity, password);
-            showAuthenticatedState(user);
-        } catch (error) {
-            showError('login-error', error);
-        }
-    });
-
-    registerForm.addEventListener('submit', async (event) => {
-        event.preventDefault();
-        const nickname = document.getElementById('reg-nickname').value.trim();
-        const identity = document.getElementById('reg-identity').value.trim();
-        const password = document.getElementById('reg-password').value;
-        const confirmPassword = document.getElementById('reg-confirm-password').value;
-        document.getElementById('reg-error').textContent = '';
-
-        if (password.length < 6) {
-            showError('reg-error', new Error('Password must be at least 6 characters.'));
-            return;
-        }
-        if (password !== confirmPassword) {
-            showError('reg-error', new Error('Passwords do not match.'));
-            return;
-        }
-
-        try {
-            const user = await window.fbService.registerUser(nickname, identity, password);
-            showAuthenticatedState(user);
-        } catch (error) {
-            showError('reg-error', error);
-        }
-    });
-
-    toggleAuthLink.addEventListener('click', (event) => {
-        event.preventDefault();
-        showForm('register');
-    });
-
-    logoutButton?.addEventListener('click', async () => {
-        const loggedOutUser = currentUser;
-
-        try {
-            if (window.fbService?.connected && loggedOutUser) {
-                await window.fbService.logoutUser(loggedOutUser.identity);
-            }
-        } catch (error) {
-            console.error('Failed to clear active player status during logout.', error);
-        } finally {
-            window.localStorage.removeItem('neon_bingo_session');
-            currentUser = null;
-            authScreen.classList.remove('hide');
-            loginForm.reset();
-            registerForm.reset();
-            showForm('login');
-        }
-    });
-
-    const storedSession = window.localStorage.getItem('neon_bingo_session');
-    if (storedSession) {
-        try {
-            showAuthenticatedState(JSON.parse(storedSession));
-        } catch (error) {
-            window.localStorage.removeItem('neon_bingo_session');
-            console.error('Failed to restore login session', error);
-        }
-    }
-}
