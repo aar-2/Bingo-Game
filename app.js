@@ -52,95 +52,111 @@ function initAudio() {
     if (!audioCtx) {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     }
-    // Resume context if suspended
-    if (audioCtx.state === 'suspended') {
-        audioCtx.resume();
+    // Resume context if suspended - handle the Promise
+    if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume().catch(err => {
+            console.warn('AudioContext resume failed:', err);
+        });
     }
 }
 
 // Global user interaction listener to unlock AudioContext
 function unlockAudioContext() {
-    initAudio();
-    if (audioCtx && audioCtx.state === 'running') {
-        window.removeEventListener('click', unlockAudioContext);
-        window.removeEventListener('keydown', unlockAudioContext);
-        window.removeEventListener('touchstart', unlockAudioContext);
+    if (!audioCtx) {
+        initAudio();
+    }
+    if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume().catch(err => {
+            console.warn('AudioContext resume failed:', err);
+        });
     }
 }
 
 // Attach listeners to unlock audio on first user gesture
-window.addEventListener('click', unlockAudioContext);
-window.addEventListener('keydown', unlockAudioContext);
-window.addEventListener('touchstart', unlockAudioContext);
+document.addEventListener('click', unlockAudioContext, { once: true });
+document.addEventListener('keydown', unlockAudioContext, { once: true });
+document.addEventListener('touchstart', unlockAudioContext, { once: true });
 
 function playSynthSound(type) {
     if (isMuted) return;
     initAudio();
-    if (!audioCtx || audioCtx.state !== 'running') return;
+    if (!audioCtx) return;
+    
+    // Check if audioContext is running, if suspended try to resume
+    if (audioCtx.state === 'suspended') {
+        audioCtx.resume().catch(err => console.warn('AudioContext resume:', err));
+        return; // Exit this call, will work on next interaction
+    }
+    
+    if (audioCtx.state !== 'running') return;
 
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
+    try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
 
-    const now = audioCtx.currentTime;
+        const now = audioCtx.currentTime;
 
-    switch (type) {
-        case 'draw':
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(880, now);
-            osc.frequency.exponentialRampToValueAtTime(220, now + 0.3);
-            gain.gain.setValueAtTime(0.15, now);
-            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
-            osc.start(now);
-            osc.stop(now + 0.3);
-            break;
-            
-        case 'correct':
-            osc.type = 'triangle';
-            osc.frequency.setValueAtTime(523.25, now); // C5
-            osc.frequency.setValueAtTime(659.25, now + 0.08); // E5
-            gain.gain.setValueAtTime(0.2, now);
-            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
-            osc.start(now);
-            osc.stop(now + 0.25);
-            break;
-            
-        case 'incorrect':
-            osc.type = 'sawtooth';
-            osc.frequency.setValueAtTime(130.81, now); // C3
-            osc.frequency.setValueAtTime(110.00, now + 0.1); // A2
-            gain.gain.setValueAtTime(0.25, now);
-            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
-            osc.start(now);
-            osc.stop(now + 0.25);
-            break;
+        switch (type) {
+            case 'draw':
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(880, now);
+                osc.frequency.exponentialRampToValueAtTime(220, now + 0.3);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                osc.start(now);
+                osc.stop(now + 0.3);
+                break;
+                
+            case 'correct':
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(523.25, now); // C5
+                osc.frequency.setValueAtTime(659.25, now + 0.08); // E5
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+                osc.start(now);
+                osc.stop(now + 0.25);
+                break;
+                
+            case 'incorrect':
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(130.81, now); // C3
+                osc.frequency.setValueAtTime(110.00, now + 0.1); // A2
+                gain.gain.setValueAtTime(0.25, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+                osc.start(now);
+                osc.stop(now + 0.25);
+                break;
 
-        case 'win':
-            const notes = [261.63, 329.63, 392.00, 523.25, 659.25, 783.99, 1046.50]; // C Major
-            osc.type = 'triangle';
-            notes.forEach((freq, idx) => {
-                const noteTime = now + (idx * 0.08);
-                osc.frequency.setValueAtTime(freq, noteTime);
-            });
-            gain.gain.setValueAtTime(0.2, now);
-            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.85);
-            osc.start(now);
-            osc.stop(now + 0.85);
-            break;
+            case 'win':
+                const notes = [261.63, 329.63, 392.00, 523.25, 659.25, 783.99, 1046.50]; // C Major
+                osc.type = 'triangle';
+                notes.forEach((freq, idx) => {
+                    const noteTime = now + (idx * 0.08);
+                    osc.frequency.setValueAtTime(freq, noteTime);
+                });
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.85);
+                osc.start(now);
+                osc.stop(now + 0.85);
+                break;
 
-        case 'lose':
-            const loseNotes = [392.00, 311.13, 261.63, 196.00]; // G minor
-            osc.type = 'sawtooth';
-            loseNotes.forEach((freq, idx) => {
-                const noteTime = now + (idx * 0.15);
-                osc.frequency.setValueAtTime(freq, noteTime);
-            });
-            gain.gain.setValueAtTime(0.2, now);
-            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.7);
-            osc.start(now);
-            osc.stop(now + 0.7);
-            break;
+            case 'lose':
+                const loseNotes = [392.00, 311.13, 261.63, 196.00]; // G minor
+                osc.type = 'sawtooth';
+                loseNotes.forEach((freq, idx) => {
+                    const noteTime = now + (idx * 0.15);
+                    osc.frequency.setValueAtTime(freq, noteTime);
+                });
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.7);
+                osc.start(now);
+                osc.stop(now + 0.7);
+                break;
+        }
+    } catch (err) {
+        console.warn('Error playing synth sound:', err);
     }
 }
 
