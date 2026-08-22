@@ -963,39 +963,130 @@ function drawPatternPreviews() {
 // --- Authentication Handler ---
 function setupAuthentication() {
     const authScreen = document.getElementById('auth-screen');
-    const authForm = document.getElementById('auth-form');
+    const loginForm = document.getElementById('login-form');
+    const registerForm = document.getElementById('register-form');
+    const tabLoginBtn = document.getElementById('tab-login');
+    const tabRegisterBtn = document.getElementById('tab-register');
+    const toggleAuthLink = document.getElementById('toggle-auth-link');
     
-    if (!authForm) return;
+    if (!loginForm || !registerForm) {
+        console.error('Auth forms not found');
+        return;
+    }
 
-    authForm.addEventListener('submit', async (e) => {
+    // Tab switching logic
+    if (tabLoginBtn && tabRegisterBtn) {
+        tabLoginBtn.addEventListener('click', () => {
+            loginForm.classList.add('active');
+            registerForm.classList.remove('active');
+            tabLoginBtn.classList.add('active');
+            tabRegisterBtn.classList.remove('active');
+            document.getElementById('login-error').textContent = '';
+        });
+
+        tabRegisterBtn.addEventListener('click', () => {
+            registerForm.classList.add('active');
+            loginForm.classList.remove('active');
+            tabRegisterBtn.classList.add('active');
+            tabLoginBtn.classList.remove('active');
+            document.getElementById('reg-error').textContent = '';
+        });
+    }
+
+    if (toggleAuthLink) {
+        toggleAuthLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (loginForm.classList.contains('active')) {
+                tabRegisterBtn.click();
+            } else {
+                tabLoginBtn.click();
+            }
+        });
+    }
+
+    // Login form submission
+    loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const identityInput = document.getElementById('auth-identity');
-        const nicknameInput = document.getElementById('auth-nickname');
-        const passwordInput = document.getElementById('auth-password');
+        const loginError = document.getElementById('login-error');
+        const identityInput = document.getElementById('login-identity');
+        const passwordInput = document.getElementById('login-password');
 
-        if (!identityInput || !passwordInput) return;
+        if (!identityInput || !passwordInput || !loginError) return;
 
         const identity = identityInput.value.trim();
-        const nickname = nicknameInput ? nicknameInput.value.trim() : identity;
         const password = passwordInput.value;
+
+        if (!identity || !password) {
+            loginError.textContent = 'Please fill in all fields';
+            return;
+        }
 
         try {
             let user;
             if (window.fbService?.connected) {
-                try {
-                    user = await window.fbService.loginUser(identity, password);
-                } catch (err) {
-                    user = await window.fbService.registerUser(nickname, identity, password);
-                }
+                user = await window.fbService.loginUser(identity, password);
+            } else {
+                user = { identity, nickname: identity };
+            }
+
+            currentUser = user;
+            if (authScreen) authScreen.style.display = 'none';
+            if (document.getElementById('welcome-username')) {
+                document.getElementById('welcome-username').textContent = user.nickname || user.identity;
+            }
+            initGame(1);
+        } catch (err) {
+            loginError.textContent = `Login failed: ${err.message}`;
+        }
+    });
+
+    // Register form submission
+    registerForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const regError = document.getElementById('reg-error');
+        const nicknameInput = document.getElementById('reg-nickname');
+        const identityInput = document.getElementById('reg-identity');
+        const passwordInput = document.getElementById('reg-password');
+        const confirmPasswordInput = document.getElementById('reg-confirm-password');
+
+        if (!nicknameInput || !identityInput || !passwordInput || !confirmPasswordInput || !regError) return;
+
+        const nickname = nicknameInput.value.trim();
+        const identity = identityInput.value.trim();
+        const password = passwordInput.value;
+        const confirmPassword = confirmPasswordInput.value;
+
+        if (!nickname || !identity || !password || !confirmPassword) {
+            regError.textContent = 'Please fill in all fields';
+            return;
+        }
+
+        if (password.length < 6) {
+            regError.textContent = 'Password must be at least 6 characters';
+            return;
+        }
+
+        if (password !== confirmPassword) {
+            regError.textContent = 'Passwords do not match';
+            return;
+        }
+
+        try {
+            let user;
+            if (window.fbService?.connected) {
+                user = await window.fbService.registerUser(nickname, identity, password);
             } else {
                 user = { identity, nickname };
             }
 
             currentUser = user;
             if (authScreen) authScreen.style.display = 'none';
+            if (document.getElementById('welcome-username')) {
+                document.getElementById('welcome-username').textContent = user.nickname || user.identity;
+            }
             initGame(1);
         } catch (err) {
-            alert(`Authentication failed: ${err.message}`);
+            regError.textContent = `Registration failed: ${err.message}`;
         }
     });
 }
@@ -1031,6 +1122,49 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Initial game boot
-    initGame(1);
+    // Pattern selection
+    document.querySelectorAll('.pattern-card').forEach(card => {
+        card.addEventListener('click', () => {
+            document.querySelectorAll('.pattern-card').forEach(c => c.classList.remove('active'));
+            card.classList.add('active');
+            currentTargetPattern = card.dataset.pattern;
+        });
+    });
+
+    // Sound toggle
+    const soundBtn = document.getElementById('sound-btn');
+    if (soundBtn) {
+        soundBtn.addEventListener('click', () => {
+            isMuted = !isMuted;
+            soundBtn.style.opacity = isMuted ? '0.5' : '1';
+        });
+    }
+
+    // Voice toggle
+    const voiceBtn = document.getElementById('voice-btn');
+    if (voiceBtn) {
+        voiceBtn.addEventListener('click', () => {
+            isVoiceEnabled = !isVoiceEnabled;
+            voiceBtn.style.opacity = isVoiceEnabled ? '1' : '0.5';
+        });
+    }
+
+    // Rules modal
+    const rulesBtn = document.getElementById('rules-btn');
+    const rulesModal = document.getElementById('rules-modal');
+    if (rulesBtn && rulesModal) {
+        rulesBtn.addEventListener('click', () => {
+            rulesModal.classList.add('show');
+        });
+    }
+
+    // Close modals
+    document.querySelectorAll('.close-modal').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.target.closest('.modal').classList.remove('show');
+        });
+    });
+
+    // Don't auto-init game - wait for auth
+    // initGame(1);
 });
