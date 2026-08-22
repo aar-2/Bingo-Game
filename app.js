@@ -52,16 +52,31 @@ function initAudio() {
     if (!audioCtx) {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     }
+    // Resume context if suspended
+    if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
 }
+
+// Global user interaction listener to unlock AudioContext
+function unlockAudioContext() {
+    initAudio();
+    if (audioCtx && audioCtx.state === 'running') {
+        window.removeEventListener('click', unlockAudioContext);
+        window.removeEventListener('keydown', unlockAudioContext);
+        window.removeEventListener('touchstart', unlockAudioContext);
+    }
+}
+
+// Attach listeners to unlock audio on first user gesture
+window.addEventListener('click', unlockAudioContext);
+window.addEventListener('keydown', unlockAudioContext);
+window.addEventListener('touchstart', unlockAudioContext);
 
 function playSynthSound(type) {
     if (isMuted) return;
     initAudio();
-    if (!audioCtx) return;
-
-    if (audioCtx.state === 'suspended') {
-        audioCtx.resume();
-    }
+    if (!audioCtx || audioCtx.state !== 'running') return;
 
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
